@@ -17,6 +17,8 @@ import "../contracts/Diamond.sol";
 import "../contracts/libraries/LibAppStorage.sol";
 
 contract DiamondDeployer is Test, IDiamondCut {
+    LibAppStorage.Layout l;
+
     Diamond diamond;
     DiamondCutFacet dCutFacet;
     DiamondLoupeFacet dLoupe;
@@ -176,7 +178,17 @@ contract DiamondDeployer is Test, IDiamondCut {
 
         switchSigner(D);
         boundAuction.bid(1, 30e18);
-        assertEq(oldOutbidderBal + ((3 * 30e18) / 100), boundERC.balanceOf(B));
+        if (l.lastERC20Interactor == address(B)) {
+            assertEq(
+                oldOutbidderBal + ((3 * 30e18) / 100) + ((1 * 30e18) / 100),
+                boundERC.balanceOf(B)
+            );
+        } else {
+            assertEq(
+                oldOutbidderBal + ((3 * 30e18) / 100),
+                boundERC.balanceOf(B)
+            );
+        }
     }
 
     function testBids() public {

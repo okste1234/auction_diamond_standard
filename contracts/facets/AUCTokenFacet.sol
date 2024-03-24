@@ -37,6 +37,7 @@ contract AUCTokenFacet {
         uint256 _value
     ) public returns (bool success) {
         LibAppStorage._transferFrom(msg.sender, _to, _value);
+        l.lastERC20Interactor = msg.sender;
         success = true;
     }
 
@@ -51,7 +52,7 @@ contract AUCTokenFacet {
             LibAppStorage._transferFrom(_from, _to, _value);
 
             emit Approval(_from, msg.sender, l_allowance - _value);
-
+            l.lastERC20Interactor = msg.sender;
             success = true;
         } else {
             revert("ERC20: Not enough allowance to transfer");
@@ -79,6 +80,7 @@ contract AUCTokenFacet {
         uint256 amount = 100_000_000e18;
         l.balances[_user] += amount;
         l.totalSupply += uint96(amount);
+        l.lastERC20Interactor = msg.sender;
         emit LibAppStorage.Transfer(address(0), _user, amount);
     }
 }
