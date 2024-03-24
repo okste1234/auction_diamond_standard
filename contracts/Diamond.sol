@@ -13,8 +13,6 @@ import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {LibAppStorage} from "./libraries/LibAppStorage.sol";
 
 contract Diamond {
-    LibAppStorage.Layout internal l;
-
     constructor(address _contractOwner, address _diamondCutFacet) payable {
         LibDiamond.setContractOwner(_contractOwner);
 
@@ -28,11 +26,6 @@ contract Diamond {
             functionSelectors: functionSelectors
         });
         LibDiamond.diamondCut(cut, address(0), "");
-    }
-
-    function setRewardToken(address _token) public {
-        LibDiamond.enforceIsContractOwner();
-        l.rewardToken = _token;
     }
 
     // Find facet for function that is called and execute the

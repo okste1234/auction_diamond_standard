@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IERC165 {
+interface IIERC165 {
     /// @notice Query if a contract implements an interface
     /// @param interfaceId The interface identifier, as specified in ERC-165
     /// @dev Interface identification is specified in ERC-165. This function

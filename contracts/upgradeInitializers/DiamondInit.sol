@@ -12,8 +12,7 @@ import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {IDiamondLoupe} from "../interfaces/IDiamondLoupe.sol";
 import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
 import {IERC173} from "../interfaces/IERC173.sol";
-import {IERC165} from "../interfaces/IERC165.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
+import {IIERC165} from "../interfaces/IERC165.sol";
 
 // It is exapected that this contract is customized if you want to deploy your diamond
 // with data from a deployment script. Use the init function to initialize state variables
@@ -25,11 +24,10 @@ contract DiamondInit {
     function init() external {
         // adding ERC165 data
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
+        ds.supportedInterfaces[type(IIERC165).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC173).interfaceId] = true;
-        ds.supportedInterfaces[type(IERC20).interfaceId] = true;
 
         // add your own state variables
         // EIP-2535 specifies that the `diamondCut` function takes two optional

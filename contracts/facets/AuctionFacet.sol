@@ -104,15 +104,16 @@ contract AuctionFacet {
     function verifyNFT(
         address nftContract
     ) internal view returns (bool isCompactible) {
+        require(nftContract != address(0), "No zero address call");
         // Check ERC721 compatibility
         bytes4 erc721InterfaceId = 0x80ac58cd; // ERC721 interface ID
-        bool isERC721 = IERC165(nftContract).supportsInterface(
+        bool isERC721 = IIERC165(nftContract).supportsInterface(
             erc721InterfaceId
         );
 
         // Check ERC1155 compatibility
         bytes4 erc1155InterfaceId = 0xd9b67a26; // ERC1155 interface ID
-        bool isERC1155 = IERC165(nftContract).supportsInterface(
+        bool isERC1155 = IIERC165(nftContract).supportsInterface(
             erc1155InterfaceId
         );
 
