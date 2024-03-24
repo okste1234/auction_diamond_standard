@@ -133,7 +133,7 @@ contract DiamondDeployer is Test, IDiamondCut {
 
         switchSigner(C);
         vm.expectRevert("Purchase AUCToken To Bid");
-        boundAuction.bid(1, 20);
+        boundAuction.bid(1, 20e18);
     }
 
     function testRevertIfBidAmountIsZero() public {
@@ -146,7 +146,27 @@ contract DiamondDeployer is Test, IDiamondCut {
         boundAuction.bid(1, 0);
     }
 
+    function testFirstBid() public {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
+
+        switchSigner(B);
+        boundAuction.bid(1, 20e18);
+        LibAppStorage.Auction memory auc = boundAuction.getAuction(1);
+
+        assertEq(auc.buyersBid, 20e18);
+        assertEq(auc.highestBid, auc.buyersBid);
+    }
+
     // function testPercentageCut() public {
+    //     switchSigner(A);
+    //     erc721Token.mint();
+    //     erc721Token.approve(address(diamond), 1);
+    //     boundAuction.startAuction(address(erc721Token), 1);
+    //     switchSigner(B);
+
     //     uint oldOutbidderBal = boundERC.balanceOf(A);
     //     AUCTokenFacet(address(diamond)).mintTo(C);
     //     switchSigner(C);
