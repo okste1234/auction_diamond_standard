@@ -106,13 +106,11 @@ contract DiamondDeployer is Test, IDiamondCut {
         boundAuction.startAuction(address(erc721Token), 1);
     }
 
-    function testRevertIfAuctionTimestampIsNotGreaterThanBlockTimestamp()
-        public
-    {
+    function testRevertIfTokenTypeIsNotERC721orERC1155() public {
         switchSigner(A);
-        erc721Token.mint();
-        vm.expectRevert("INVALID_CLOSE_TIME");
-        boundAuction.startAuction(address(erc721Token), 1);
+        // erc721Token.mint();
+        vm.expectRevert();
+        boundAuction.startAuction(address(erc20Facet), 1);
     }
 
     // function testAuctionStateChange() public {
