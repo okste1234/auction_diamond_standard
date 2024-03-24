@@ -17,6 +17,7 @@ library LibAppStorage {
         uint8 decimals;
         mapping(address => uint256) balances;
         mapping(address => mapping(address => uint256)) allowances;
+        address lastERC20Interactor;
         //STAKING
         address rewardToken;
         uint256 rewardRate;
