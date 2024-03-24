@@ -125,33 +125,16 @@ contract DiamondDeployer is Test, IDiamondCut {
         assertEq(auc.nftContractAddress, address(erc721Token));
     }
 
-    // function testRevertIfAuctionTimestampIsReachedOnBid() public {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 1e18, 2 days);
-    //     vm.warp(3 days);
-    //     vm.expectRevert("AUCTION_CLOSED");
-    //     boundAuction.bid(0, 5e18);
-    // }
+    function testRevertIfBidderDoNotHaveEnoughToken() public {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
 
-    // function testRevertIfInsufficientTokenBalance() public {
-    //     switchSigner(C);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 1e18, 2 days);
-    //     vm.expectRevert("INSUFFICIENT_BALANCE");
-    //     boundAuction.bid(0, 5e18);
-    // }
-
-    // function testRevertIfBidAmountIsLessThanAuctionStartPrice() public {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 2e18, 2 days);
-    //     vm.expectRevert("STARTING_PRICE_MUST_BE_GREATER");
-    //     boundAuction.bid(0, 1e18);
-    // }
+        switchSigner(C);
+        vm.expectRevert("Not Enough Token To Bid");
+        boundAuction.bid(1, 20);
+    }
 
     // function testRevertIfBidAmountIsLessThanLastBiddedAmount() public {
     //     switchSigner(A);
