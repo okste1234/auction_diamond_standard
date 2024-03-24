@@ -1,52 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {LibAppStorage} from "../libraries/LibAppStorage.sol";
-
-interface ERC165 {
-    function supportsInterface(bytes4 interfaceId) external view returns (bool);
-}
+import {LibFuncHelper} from "../libraries/LibFuncHelper.sol";
+import "../interfaces/INFT.sol";
+import "../interfaces/IERC165.sol";
 
 contract AuctionFacet {
     LibAppStorage.Layout l;
-
-    uint256 id;
-    uint256 public minBidIncrementPercentage = 20;
-    uint256 totalFee;
-    uint public burnedPercentage = 2;
-    uint public daoPercentage = 2;
-    uint public outbidPercentage = 3;
-    uint public teamPercentage = 2;
-    uint public lastInteractedPercentage = 1;
-
-    struct Auction {
-        address owner;
-        uint256 nftId;
-        uint256 buyersBid;
-        uint256 highestBid;
-        address lastBidder;
-        bool isSettled;
-    }
-
-    mapping(uint256 => Auction) auctionId;
+    using LibFuncHelper for *;
 
     event StartAuction(uint256 indexed tokenId, uint256 indexed auctionId);
-    event BidPlaced(uint256 auctionId, uint256 amount);
+    event BidPlaced(uint256 indexed auctionId, uint256 amount);
+    event AuctionSettled(uint256 indexed auctionId, bool indexed);
 
     // auction function which uses the verifyNFT function
     function startAuction(address nftContract, uint256 tokenId) public {
         require(verifyNFT(nftContract));
+        require(INFT(nftContract).ownerOf(tokenId) == msg.sender, "NOT_OWNER");
 
-        id = id + 1;
-        Auction storage auc = auctionId[id];
+        INFT(nftContract).transferFrom(msg.sender, address(this), tokenId);
+
+        l.id = l.id + 1;
+        LibAppStorage.Auction storage auc = l.auctionId[l.id];
 
         auc.owner = msg.sender;
         auc.nftId = tokenId;
+        auc.nftContractAddress = nftContract;
 
-        id++;
+        l.id++;
 
-        emit StartAuction(tokenId, id);
+        emit StartAuction(tokenId, l.id);
     }
 
     function bid(
@@ -60,8 +44,8 @@ contract AuctionFacet {
         //transfer out tokens to contract
         LibAppStorage._transferFrom(msg.sender, address(this), _amount);
 
-        Auction storage auc = auctionId[_auctionId];
-        require(!auc.isSettled, "NFT sold already");
+        LibAppStorage.Auction storage auc = l.auctionId[_auctionId];
+        require(!auc.isSettled, "NFT sold already, auction ended");
 
         auc.buyersBid = _amount;
 
@@ -72,10 +56,13 @@ contract AuctionFacet {
             auc.lastBidder = msg.sender;
         } else {
             require(
-                _amount > (auc.highestBid * minBidIncrementPercentage) / 100,
+                _amount >
+                    (auc.highestBid *
+                        LibAppStorage.MID_BID_INCREAMENT_PERCENTAGE) /
+                        100,
                 "Bid amount must be at least 20% higher than the current bid"
             );
-            uint percentageCut = calculateIncentive(_amount);
+            uint percentageCut = LibFuncHelper.calculateIncentive(_amount);
 
             distributeIncentive(
                 percentageCut,
@@ -93,11 +80,52 @@ contract AuctionFacet {
         successful = true;
     }
 
-    function calculateIncentive(uint _amount) internal pure returns (uint) {
-        return (10 * _amount) / 100;
+    function endAuction(uint256 _auctionId) external {
+        LibAppStorage.Auction storage auc = l.auctionId[_auctionId];
+        require(msg.sender == auc.owner, "This is not your auction");
+        auc.isSettled = true;
+
+        INFT(auc.nftContractAddress).transferFrom(
+            address(this),
+            auc.lastBidder,
+            auc.nftId
+        );
+
+        emit AuctionSettled(_auctionId, true);
     }
 
-    // Function to distribute the tax according to the breakdown
+    function getAuction(
+        uint _auctionId
+    ) external view returns (LibAppStorage.Auction memory) {
+        return l.auctionId[_auctionId];
+    }
+
+    // Function to verify if the NFT ID is compatible with ERC721 or ERC1155
+    function verifyNFT(
+        address nftContract
+    ) internal view returns (bool isCompactible) {
+        // Check ERC721 compatibility
+        bytes4 erc721InterfaceId = 0x80ac58cd; // ERC721 interface ID
+        bool isERC721 = IERC165(nftContract).supportsInterface(
+            erc721InterfaceId
+        );
+
+        // Check ERC1155 compatibility
+        bytes4 erc1155InterfaceId = 0xd9b67a26; // ERC1155 interface ID
+        bool isERC1155 = IERC165(nftContract).supportsInterface(
+            erc1155InterfaceId
+        );
+
+        // Either ERC721 or ERC1155 should be supported, but not both
+        require(
+            isERC721 || isERC1155,
+            "NFT is neither ERC721 nor ERC1155 compatible"
+        );
+
+        isCompactible = true;
+    }
+
+    // Function to distribute the incentive according to the breakdown
     function distributeIncentive(
         uint _fee,
         address _outbidBidder,
@@ -119,54 +147,27 @@ contract AuctionFacet {
         );
 
         LibAppStorage._transferFrom(
-            address(0),
+            address(this),
             _outbidBidder, /// OUTBIDDER
             toOutbidBidder
         );
 
         LibAppStorage._transferFrom(
-            address(0),
+            address(this),
             address(0), /// TO Burn
             toTeam
         );
 
         LibAppStorage._transferFrom(
-            address(0),
+            address(this),
             address(0), /// TOTEAM
             toBurn
         );
 
         LibAppStorage._transferFrom(
-            address(0),
+            address(this),
             _lastERC20Interactor, /// TO LAST INTERACTOR
             toInteractor
         );
-    }
-
-    function endAuction() external returns (bool) {}
-
-    // Function to verify if the NFT ID is compatible with ERC721 or ERC1155
-    function verifyNFT(
-        address nftContract
-    ) internal view returns (bool isCompactible) {
-        // Check ERC721 compatibility
-        bytes4 erc721InterfaceId = 0x80ac58cd; // ERC721 interface ID
-        bool isERC721 = ERC165(nftContract).supportsInterface(
-            erc721InterfaceId
-        );
-
-        // Check ERC1155 compatibility
-        bytes4 erc1155InterfaceId = 0xd9b67a26; // ERC1155 interface ID
-        bool isERC1155 = ERC165(nftContract).supportsInterface(
-            erc1155InterfaceId
-        );
-
-        // Either ERC721 or ERC1155 should be supported, but not both
-        require(
-            isERC721 || isERC1155,
-            "NFT is neither ERC721 nor ERC1155 compatible"
-        );
-
-        isCompactible = true;
     }
 }
