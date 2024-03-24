@@ -98,22 +98,22 @@ contract DiamondDeployer is Test, IDiamondCut {
         boundAuction.startAuction(address(0), 1);
     }
 
-    // function testRevertIfNotTokenOwner() public {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     switchSigner(B);
-    //     vm.expectRevert("NOT_OWNER");
-    //     boundAuction.startAuction(address(erc721Token), 1);
-    // }
+    function testRevertIfNotTokenOwner() public {
+        switchSigner(A);
+        erc721Token.mint();
+        switchSigner(B);
+        vm.expectRevert("NOT_OWNER");
+        boundAuction.startAuction(address(erc721Token), 1);
+    }
 
-    // function testRevertIfAuctionTimestampIsNotGreaterThanBlockTimestamp()
-    //     public
-    // {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     vm.expectRevert("INVALID_CLOSE_TIME");
-    //     boundAuction.startAuction(address(erc721Token), 1);
-    // }
+    function testRevertIfAuctionTimestampIsNotGreaterThanBlockTimestamp()
+        public
+    {
+        switchSigner(A);
+        erc721Token.mint();
+        vm.expectRevert("INVALID_CLOSE_TIME");
+        boundAuction.startAuction(address(erc721Token), 1);
+    }
 
     // function testAuctionStateChange() public {
     //     switchSigner(A);
