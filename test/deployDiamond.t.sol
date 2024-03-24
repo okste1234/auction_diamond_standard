@@ -113,18 +113,17 @@ contract DiamondDeployer is Test, IDiamondCut {
         boundAuction.startAuction(address(erc20Facet), 1);
     }
 
-    // function testAuctionStateChange() public {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.startAuction(address(erc721Token), 1);
-    //     LibAppStorage.Auction memory new_auction = boundAuction.getAuction(0);
-    //     assertEq(new_auction.id, 0);
-    //     assertEq(new_auction.author, A);
-    //     assertEq(new_auction.tokenId, 1);
-    //     assertEq(new_auction.closeTime, 2 days);
-    //     assertEq(new_auction.nftContractAddress, address(erc721Token));
-    // }
+    function testAuctionStateChange() public {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
+        LibAppStorage.Auction memory auc = boundAuction.getAuction(1);
+        assertEq(auc.nftId, 1);
+        assertEq(auc.owner, A);
+        assertEq(auc.isSettled, false);
+        assertEq(auc.nftContractAddress, address(erc721Token));
+    }
 
     // function testRevertIfAuctionTimestampIsReachedOnBid() public {
     //     switchSigner(A);
