@@ -37,10 +37,10 @@ contract AuctionFacet {
         uint256 _auctionId,
         uint256 _amount
     ) external returns (bool successful) {
-        require(_amount > 0, "NotZero");
+        require(_amount > 0, "Zero Amount Is Not Enough Token To Bid");
         require(msg.sender != address(0));
         uint256 balance = l.balances[msg.sender];
-        require(balance >= _amount, "Not Enough Token To Bid");
+        require(balance >= _amount, "Purchase AUCToken To Bid");
         //transfer out tokens to contract
         LibAppStorage._transferFrom(msg.sender, address(this), _amount);
 

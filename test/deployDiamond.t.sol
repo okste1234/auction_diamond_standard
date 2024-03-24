@@ -132,19 +132,19 @@ contract DiamondDeployer is Test, IDiamondCut {
         boundAuction.startAuction(address(erc721Token), 1);
 
         switchSigner(C);
-        vm.expectRevert("Not Enough Token To Bid");
+        vm.expectRevert("Purchase AUCToken To Bid");
         boundAuction.bid(1, 20);
     }
 
-    // function testRevertIfBidAmountIsLessThanLastBiddedAmount() public {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 2e18, 2 days);
-    //     boundAuction.bid(0, 2e18);
-    //     vm.expectRevert("PRICE_MUST_BE_GREATER_THAN_LAST_BIDDED");
-    //     boundAuction.bid(0, 1e18);
-    // }
+    function testRevertIfBidAmountIsZero() public {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
+        switchSigner(B);
+        vm.expectRevert("Zero Amount Is Not Enough Token To Bid");
+        boundAuction.bid(1, 0);
+    }
 
     // function testPercentageCut() public {
     //     uint oldOutbidderBal = boundERC.balanceOf(A);
