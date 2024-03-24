@@ -28,6 +28,7 @@ contract DiamondDeployer is Test, IDiamondCut {
     address A = address(0xa);
     address B = address(0xb);
     address C = address(0xc);
+    address D = address(0xd);
 
     AuctionFacet boundAuction;
     AUCTokenFacet boundERC;
@@ -81,13 +82,15 @@ contract DiamondDeployer is Test, IDiamondCut {
         //upgrade diamond
         IDiamondCut(address(diamond)).diamondCut(cut, address(0x0), "");
 
-        A = mkaddr("staker a");
-        B = mkaddr("staker b");
-        C = mkaddr("staker c");
+        A = mkaddr("bidder a");
+        B = mkaddr("bidder b");
+        C = mkaddr("bidder c");
+        D = mkaddr("bidder D");
 
         //mint test tokens
         AUCTokenFacet(address(diamond)).mintTo(A);
         AUCTokenFacet(address(diamond)).mintTo(B);
+        AUCTokenFacet(address(diamond)).mintTo(D);
 
         boundAuction = AuctionFacet(address(diamond));
         boundERC = AUCTokenFacet(address(diamond));
@@ -160,68 +163,47 @@ contract DiamondDeployer is Test, IDiamondCut {
         assertEq(auc.highestBid, auc.buyersBid);
     }
 
-    // function testPercentageCut() public {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.startAuction(address(erc721Token), 1);
-    //     switchSigner(B);
+    function testPercentageCut() public {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
 
-    //     uint oldOutbidderBal = boundERC.balanceOf(A);
-    //     AUCTokenFacet(address(diamond)).mintTo(C);
-    //     switchSigner(C);
-    //     boundERC.transfer(address(0), 1e18);
-    //     uint oldLastERC20InteractorBal = boundERC.balanceOf(
-    //         boundERC.getLastGuy()
-    //     );
-    //     switchSigner(A);
+        switchSigner(B);
+        uint oldOutbidderBal = boundERC.balanceOf(B);
 
-    //     uint oldDaoBal = boundERC.balanceOf(
-    //         0x42AcD393442A1021f01C796A23901F3852e89Ff3
-    //     );
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 2e18, 2 days);
-    //     boundAuction.bid(0, 2e18);
-    //     switchSigner(B);
-    //     boundAuction.bid(0, 3e18);
-    //     assertEq(
-    //         boundERC.balanceOf(0x42AcD393442A1021f01C796A23901F3852e89Ff3),
-    //         ((2 * 3e18) / 100) + oldDaoBal
-    //     );
-    //     assertEq(boundERC.balanceOf(A), ((3 * 3e18) / 100) + oldOutbidderBal);
-    //     assertEq(boundERC.balanceOf(A), ((3 * 3e18) / 100) + oldOutbidderBal);
-    //     assertEq(
-    //         boundERC.balanceOf(boundERC.getLastGuy()),
-    //         ((1 * 3e18) / 100) + oldLastERC20InteractorBal
-    //     );
-    // }
+        boundAuction.bid(1, 20e18);
 
-    // function testBids() public {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 2e18, 2 days);
-    //     boundAuction.bid(0, 2e18);
-    //     switchSigner(B);
-    //     boundAuction.bid(0, 3e18);
-    //     LibAppStorage.Auction memory bids = boundAuction.getBid(1);
-    //     assertEq(bids.length, 2);
-    //     assertEq(bids[0].author, A);
-    //     assertEq(bids[0].amount, 2e18);
-    //     assertEq(bids[1].author, B);
-    //     assertEq(bids[1].amount, (3e18 - ((10 * 3e18) / 100)));
-    // }
+        switchSigner(D);
+        boundAuction.bid(1, 30e18);
+        assertEq(oldOutbidderBal + ((3 * 30e18) / 100), boundERC.balanceOf(B));
+    }
 
-    // function testRevertIfTimeNotReachedOnCloseBid() external {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 2e18, 2 days);
-    //     boundAuction.bid(0, 2e18);
-    //     vm.expectRevert("TIME_NOT_REACHED");
-    //     boundAuction.closeAuction(0);
-    // }
+    function testBids() public {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
+        boundAuction.bid(1, 20e18);
+        switchSigner(B);
+        boundAuction.bid(1, 30e18);
+        LibAppStorage.Auction memory auc = boundAuction.getAuction(1);
+        assertEq(auc.highestBid, 30e18);
+    }
+
+    function testRevertIfTriedToBidOnCloseBid() external {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
+        switchSigner(B);
+        boundAuction.bid(0, 20e18);
+        switchSigner(A);
+        boundAuction.endAuction(1);
+        vm.expectRevert("NFT sold already, auction ended");
+        switchSigner(D);
+        boundAuction.bid(0, 30e18);
+    }
 
     // function testRevertIfSignerHasNoRightOnCloseBid() external {
     //     switchSigner(A);

@@ -49,8 +49,6 @@ contract AuctionFacet {
 
         auc.buyersBid = _amount;
 
-        l.lastERC20Interactor = msg.sender;
-
         if (auc.highestBid == 0) {
             auc.highestBid = auc.buyersBid;
             auc.lastBidder = msg.sender;
@@ -142,7 +140,7 @@ contract AuctionFacet {
 
         // Transfer the respective amounts to the specified wallets
         LibAppStorage._transferFrom(
-            address(0),
+            address(this),
             address(0x42AcD393442A1021f01C796A23901F3852e89Ff3), /// DAO
             toDAO
         );
