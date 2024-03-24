@@ -189,6 +189,18 @@ contract DiamondDeployer is Test, IDiamondCut {
         boundAuction.bid(1, 30e18);
         LibAppStorage.Auction memory auc = boundAuction.getAuction(1);
         assertEq(auc.highestBid, 30e18);
+        assertEq(auc.lastBidder, address(B));
+    }
+
+    function testSuccessfulTransferOfNFT() external {
+        switchSigner(A);
+        erc721Token.mint();
+        erc721Token.approve(address(diamond), 1);
+        boundAuction.startAuction(address(erc721Token), 1);
+        boundAuction.bid(1, 20e18);
+        LibAppStorage.Auction memory auc = boundAuction.getAuction(1);
+        assertEq(auc.lastBidder, address(A));
+        boundAuction.endAuction(1);
     }
 
     function testRevertIfTriedToBidOnCloseBid() external {
@@ -196,45 +208,17 @@ contract DiamondDeployer is Test, IDiamondCut {
         erc721Token.mint();
         erc721Token.approve(address(diamond), 1);
         boundAuction.startAuction(address(erc721Token), 1);
+        boundAuction.bid(1, 20e18);
         switchSigner(B);
-        boundAuction.bid(0, 20e18);
+        boundAuction.bid(1, 30e18);
+        LibAppStorage.Auction memory auc = boundAuction.getAuction(1);
+        assertEq(auc.lastBidder, address(B));
         switchSigner(A);
         boundAuction.endAuction(1);
         vm.expectRevert("NFT sold already, auction ended");
         switchSigner(D);
-        boundAuction.bid(0, 30e18);
+        boundAuction.bid(1, 30e18);
     }
-
-    // function testRevertIfSignerHasNoRightOnCloseBid() external {
-    //     switchSigner(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 2e18, 2 days);
-    //     boundAuction.bid(0, 2e18);
-    //     switchSigner(B);
-    //     vm.warp(2 days);
-    //     vm.expectRevert("YOU_DONT_HAVE_RIGHT");
-    //     boundAuction.closeAuction(0);
-    // }
-
-    // function testTokenTransferOnCloseBid() external {
-    //     AUCTokenFacet(address(diamond)).mintTo(C);
-    //     switchSigner(A);
-    //     uint oldABalance = boundERC.balanceOf(A);
-    //     erc721Token.mint();
-    //     erc721Token.approve(address(diamond), 1);
-    //     boundAuction.createAuction(address(erc721Token), 1, 2e18, 2 days);
-    //     switchSigner(B);
-    //     boundAuction.bid(0, 2e18);
-    //     switchSigner(C);
-    //     boundAuction.bid(0, 3e18);
-    //     vm.warp(2 days);
-    //     boundAuction.closeAuction(0);
-    //     assertEq(
-    //         boundERC.balanceOf(A),
-    //         oldABalance + (3e18 - ((10 * 3e18) / 100))
-    //     );
-    // }
 
     function generateSelectors(
         string memory _facetName
